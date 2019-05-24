@@ -470,5 +470,28 @@ class Archiver {
       else return false;
     }
   }
+
+  /**
+   * This function converts an object/array to a string
+   *
+   * @param object|array $array The object/array to be converted to a string
+   * @param int $level The level deep we are when converting the array to a string
+   * @return string of the Object/Array
+   */
+  protected function array_to_string($array, $level = 1) {
+    //defines the starting space
+    $space = "  ";
+    //loops through building the spacing
+    for ($i = 0; $i < $level-1; $i++) $space .= "          ";
+
+    //defines the string
+    $str = "[\n";
+
+    //loops through the array going deeper if theres a deeper object/array
+    foreach($array as $k => $v) $str .= $space . '"' . $k .'" => "' . ((gettype($v) == "array" || gettype($v) == "object") ? $this->array_to_string($v, $level+1) : $v) . '"' .",\n";
+
+    //returns the array as a string
+    return rtrim($str,",\n") . "\n" . ($level > 1 ? substr($space, 0, -2) : "") . "]";
+  }
 }
 ?>
