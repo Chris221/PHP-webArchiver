@@ -99,6 +99,7 @@ class Archiver {
    * @return array of urls
    */
   function get_urls() {
+    //returns the urls
     return $this->urls;
   }
 
@@ -108,7 +109,38 @@ class Archiver {
    * @return string of the folder
    */
   function get_folder() {
+    //returns the folder
     return $this->folder;
+  }
+
+  /**
+   * A function to get the timezone
+   *
+   * @return string of the timezone
+   */
+  function get_timezone() {
+    //returns the timezone
+    return $this->timezone;
+  }
+
+  /**
+   * A function to get the verbose bool
+   *
+   * @return bool for verbose
+   */
+  function get_verbose() {
+    //returns the verbose bool
+    return $this->verbose;
+  }
+
+  /**
+   * A function to get the showFilePath bool
+   *
+   * @return bool for showFilePath
+   */
+  function get_showFilePath() {
+    //returns the showFilePath
+    return $this->showFilePath;
   }
   
   /**
@@ -119,7 +151,9 @@ class Archiver {
    * @return bool of the new value of verbose
    */
   function toggle_verbose($bool = null) {
+    //if no bool was sent, set to the opposite
     if ($bool == null) $bool = !$this->verbose;
+    //returns the new bool
     return $this->verbose = $bool;
   }
   
@@ -131,7 +165,9 @@ class Archiver {
    * @return bool of the new value of showFilePath
    */
   function toggle_path($bool = null) {
+    //if no bool was sent, set to the opposite
     if ($bool == null) $bool = !$this->showFilePath;
+    //returns the new bool
     return $this->showFilePath = $bool;
   }
 
@@ -319,33 +355,38 @@ class Archiver {
   protected function archive_url($url) {
     //gets the URL contents
     $res = $this->cURL($url);
-  
+
     //if there is no reponse then throw an Exception
     if (!$res) throw new \Exception("Failed to get the content of the page: $url.");
-  
+
     //if the folder doesn't exist for the archive location, make it
     if (!file_exists($this->folder)) mkdir($this->folder);
-  
+
     //matches out the domain and the page
-    if (preg_match("{^(?:https?:\/\/)(?:www\.)?([^\/]+)\/?(\S*)$}i", $url, $matches)) {
-  
+    if (preg_match("{^(?:https?:\/\/)(?:www\.)?([^\/]+)\/?([^?]+)(\S*)$}i", $url, $matches)) {
+
       //gets the domain, replaces characters that aren't safe in filenames with '_'
       $site = str_replace(['\\', '/', ':', '*', '?', '"', '<', '>', "|"], "_", $matches[1]).'/';
-  
+
       //if the folder doesn't exist for the site, make it
       if (!file_exists($this->folder . $site)) mkdir($this->folder . $site);
 
-      //makes the folder with the timestaml
-      mkdir($this->folder . $site . ($time_folder = (new \DateTime("now", new \DateTimeZone($this->timezone)))->format('M_d_Y___H_i_s_v')."/"));
-  
+      //if the folder doesn't exist for the timestamp, make it
+      if (!file_exists($this->folder . $site . ($time_folder = (new \DateTime("now", new \DateTimeZone($this->timezone)))->format('M_d_Y___H_i_s_v')."/"))) mkdir($this->folder . $site . $time_folder);
+
+      //matches the file path from the site
+      preg_match("{^(\S+\/)?(\w+)}i", $matches[2], $filepath_matches);
+
+      //if the folder doesn't exist for the filepath, make it
+      if (!file_exists($this->folder . $site . $time_folder . ($filepath = (isset($filepath_matches[1]) ? $filepath_matches[1] : "")))) mkdir($this->folder . $site . $time_folder . $filepath);
+
       //gets the page, replaces characters that aren't safe in filenames with '_', adds the current timestamp in UTC and then adds .html
-      $file = ($matches[2] ? str_replace(['\\', '/', ':', '*', '?', '"', '<', '>', "|"], "_", $matches[2]) : "index") . ".html";
-  
-      //returns true or false
-      if (file_put_contents($loc = ($this->folder . $site . $time_folder . $file), $res)) return $loc;
+      $file = (isset($filepath_matches[2]) ? str_replace(['\\', '/', ':', '*', '?', '"', '<', '>', "|"], "_", $filepath_matches[2]) : "index") . ".html";
+
+      //returns the file location or false
+      if (file_put_contents($loc = ($this->folder . $site . $time_folder . $filepath . $file), $res)) return $loc;
       else return false;
     }
   }
-
 }
 ?>

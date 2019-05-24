@@ -2,7 +2,7 @@
 require('../vendor/autoload.php');
 
 //defines an array of the urls to archive, Requires http
-$config =[
+$config = [
   "file" => "urls.txt",
   "verbose" => false,
   "showFilePath" => false,
