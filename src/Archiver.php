@@ -192,7 +192,8 @@ class Archiver {
   }
 
   /**
-   * This function runs the process on the urls that are set
+   * This function passes the config to the process and intercepts the results
+   * for possibly saving it.
    *
    * @param array $params = [
    *   'type'   => (string) array|string Sets how you want the results to be
@@ -210,6 +211,54 @@ class Archiver {
    *               there are no urls to process, then return false.
    */
   function process(array $config = []) {
+    //runs the process and intercepts the results
+    $results = $this->_process($config);
+
+    //if the file results file is set
+    if ($this->resultsFile) {
+      //parse out the file name and the path
+      preg_match("{(\S+(?:\/|\\\\))?(\S+)}", $this->resultsFile, $matches);
+      //if theres a path, make the director of there isn't one
+      if (isset($matches[1])) if (!file_exists($matches[1])) mkdir($matches[1]);
+
+      //if the results are an array then convert them
+      if (gettype($results) == "array") $output = $this->array_to_string($results) . "\n";
+      //if the results are an bool then correct them
+      else if (gettype($results) == "boolean") $output = ($results ? "True" : "False") . "\n";
+      //otherwise set the results
+      else $output = rtrim($results, "\n") . "\n";
+
+      //opens the connection to the folder
+      $file = fopen($this->resultsFile,'ab');
+      //writes the results to the file
+      fwrite($file, $output);
+      //closes the folder
+      fclose($file);
+    }
+
+    //returns the results out to the user
+    return $results;
+  }
+
+  /**
+   * This function runs the process on the urls that are set
+   *
+   * @param array $params = [
+   *   'type'   => (string) array|string Sets how you want the results to be
+   *               returned. Array returns the array. String returns them in
+   *               a readable manor.
+   *   'method' => (string) console|web|text Sets how you want the output 
+   *               of each link to be organized and returned. Default: text.
+   *               Only for type "string". 
+   *               console = "\n"
+   *               web = "<br/>"
+   *               text = " "
+   * ]
+   * @return mixed If a type is sent then a response will be returned. If not
+   *               then true will be returned saving it processed the urls. If
+   *               there are no urls to process, then return false.
+   */
+  protected function _process(array $config = []) {
     //if there are no urls, return false
     if (empty($this->urls)) return false;
 
