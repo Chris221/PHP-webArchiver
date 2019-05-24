@@ -444,7 +444,7 @@ class Archiver {
       if (!file_exists($this->folder . $site . ($time_folder = (new \DateTime("now", new \DateTimeZone($this->timezone)))->format('M_d_Y___H_i_s_v')."/"))) mkdir($this->folder . $site . $time_folder);
 
       //matches the file path from the site
-      preg_match("{^(\S+\/)?(\w+)}i", $matches[2], $filepath_matches);
+      preg_match("{^(\S+\/)?(\w+(?:\.\w+)*)}i", $matches[2], $filepath_matches);
 
       //if the folder doesn't exist for the filepath, make it
       if (!file_exists($this->folder . $site . $time_folder . ($filepath = (isset($filepath_matches[1]) ? $filepath_matches[1] : "")))) mkdir($this->folder . $site . $time_folder . $filepath);
