@@ -6,7 +6,7 @@ namespace web;
  * This class takes in a url or list of urls and archives them locally
  */
 class Archiver {
-  protected $urls, $folder, $verbose, $showFilePath, $timezone;
+  protected $urls, $folder, $verbose, $showFilePath, $timezone, $resultsFile;
 
   /**
    * The constructor function is used to set up the whole class
@@ -19,6 +19,7 @@ class Archiver {
    * @property bool verbose is used to set verbose mode on or off (Default: off)
    * @property bool showFilePath is used to show the file path on or off (Default: off)
    * @property string file that is imported into the url list, put one url on a line
+   * @property string resultsFile where to save the results to (works as the toggle)
    */
   function __construct(array $config = []) {
     //if the config has urls in it, set them, if it has a url then cast it as array
@@ -29,6 +30,9 @@ class Archiver {
 
     //if the config has a folder set it, otherwise set the default
     $this->folder = isset($config['folder']) ? (gettype($config['folder'] == "string") ? $config['folder'] : ($error = new \Exception("The param folder must be a string."))) : "history/";
+
+    //if the config has resultsFile set the path to use (works as the toggle), otherwise set to none
+    $this->resultsFile = isset($config['resultsFile']) ? (gettype($config['resultsFile'] == "string") ? $config['resultsFile'] : ($error = new \Exception("The param resultsFile must be a string."))) : false;
 
     //if verbose is toggled in the config, set it
     $this->verbose = isset($config['verbose']) ? filter_var($config['verbose'], FILTER_VALIDATE_BOOLEAN) : false;
@@ -56,6 +60,22 @@ class Archiver {
 
     //if there was an error throw it
     if (isset($error)) throw $error;
+  }
+
+  /**
+   * Takes a string of the file path for where to save the results to
+   * Sending no param results in resetting the results file path to none
+   *
+   * @param string $resultsFile Accepts only a string as the results file path (Default: none)
+   * @return bool true on success, false on failure
+   */
+  function set_results_file($resultsFile = false) {
+    //if the type of $resultsFile is a string add it
+    if (gettype($resultsFile) == "string") $this->resultsFile = $resultsFile;
+    //otherwise it failed
+    else return false;
+    //if it didn't fail it must have pased
+    return true;
   }
 
   /**
