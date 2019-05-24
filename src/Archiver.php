@@ -472,13 +472,24 @@ class Archiver {
   }
 
   /**
-   * This function converts an object/array to a string
+   * This function converts an Array/Object to a string
    *
-   * @param object|array $array The object/array to be converted to a string
-   * @param int $level The level deep we are when converting the array to a string
-   * @return string of the Object/Array
+   * @param array|object $array The Array/Object to be converted to a string
+   * @return string of the Array/Object
    */
-  protected function array_to_string($array, $level = 1) {
+  function array_to_string($array) {
+    return _array_to_string($array);
+  }
+
+    /**
+     * This function converts an Array/Object to a string
+     *
+     * @param object|array $array The Array/Object to be converted to a string
+     * @param int $level The level deep we are when converting the array to a
+     *            string (should be left out so it can auto handle)
+     * @return string of the Array/Object
+     */
+  protected function _array_to_string($array, $level = 1) {
     //defines the starting space
     $space = "  ";
     //loops through building the spacing
@@ -488,7 +499,7 @@ class Archiver {
     $str = "[\n";
 
     //loops through the array going deeper if theres a deeper object/array
-    foreach($array as $k => $v) $str .= $space . '"' . $k .'" => "' . ((gettype($v) == "array" || gettype($v) == "object") ? $this->array_to_string($v, $level+1) : $v) . '"' .",\n";
+    foreach($array as $k => $v) $str .= $space . '"' . $k .'" => "' . ((gettype($v) == "array" || gettype($v) == "object") ? $this->_array_to_string($v, $level+1) : $v) . '"' .",\n";
 
     //returns the array as a string
     return rtrim($str,",\n") . "\n" . ($level > 1 ? substr($space, 0, -2) : "") . "]";
