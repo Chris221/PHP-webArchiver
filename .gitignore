@@ -1,0 +1,5 @@
+vendor/
+history/
+urls.txt
+*.sh
+*.bat

@@ -1,0 +1,22 @@
+{
+    "name": "chris221/php-webarchiver",
+    "description": "A PHP library to archive web sites",
+    "type": "library",
+    "require": {
+        "php": ">=5.3.0",
+        "ext-curl": "*"
+    },
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Christopher Siena",
+            "email": "Chris@ChrisSiena.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "autoload": {
+        "psr-4": {
+            "web\\": "src/"
+        }
+    }
+}
