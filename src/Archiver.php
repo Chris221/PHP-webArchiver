@@ -332,6 +332,19 @@ class Archiver {
   }
 
   /**
+   * This function runs the process on the urls that are set and 
+   * return the results.
+   * 
+   * @return array An array of the results
+   */
+  function process_array() {
+    //sends the params to get a space seperator, returns it
+    return $this->process([
+      "type" => "array"
+    ]);
+  }
+
+  /**
    * This function processes the urls through a loop getting the response from them
    *
    * @return array of strings with information about the urls
