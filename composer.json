@@ -1,25 +1,28 @@
 {
-    "name": "chris221/php-webarchiver",
-    "description": "A PHP library to archive web sites",
-    "keywords": ["web","archiver"],
-    "type": "library",
-    "require": {
-        "php": ">=5.3.0",
-        "ext-curl": "*",
-        "ext-date": "*"
-    },
-    "license": "MIT",
-    "authors": [
-        {
-            "name": "Christopher Siena",
-            "email": "Chris@ChrisSiena.com",
-            "homepage": "http://ChrisSiena.com/"
-        }
-    ],
-    "minimum-stability": "dev",
-    "autoload": {
-        "psr-4": {
-            "web\\": "src/"
-        }
+  "name": "chris221/php-webarchiver",
+  "description": "A PHP library to archive web sites",
+  "keywords": [
+    "web",
+    "archiver"
+  ],
+  "type": "library",
+  "require": {
+    "php": ">=5.3.0",
+    "ext-curl": "*",
+    "ext-date": "*"
+  },
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Christopher Siena",
+      "email": "Chris@ChrisSiena.com",
+      "homepage": "http://ChrisSiena.com/"
     }
+  ],
+  "minimum-stability": "dev",
+  "autoload": {
+    "psr-4": {
+      "web\\": "src/"
+    }
+  }
 }
