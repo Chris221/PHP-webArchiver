@@ -6,7 +6,7 @@ namespace web;
  * This class takes in a url or list of urls and archives them locally
  */
 class Archiver {
-  protected $urls, $folder, $verbose, $showFilePath, $timezone, $resultsFile;
+  protected $urls, $folder, $verbose, $showFilePath, $timezone, $resultsFile, $downloadExtras;
 
   /**
    * The constructor function is used to set up the whole class
@@ -18,6 +18,7 @@ class Archiver {
    * @property string timezone that is used in when stamping the archive (Default: UTC)
    * @property bool verbose is used to set verbose mode on or off (Default: off)
    * @property bool showFilePath is used to show the file path on or off (Default: off)
+   * @property bool downloadExtras whether or not to download extras (Default: on)
    * @property string file that is imported into the url list, put one url on a line (urls proceeded by //
    * or # will be ignored)
    * @property string resultsFile where to save the results to (works as the toggle)
@@ -37,6 +38,9 @@ class Archiver {
 
     //if showFilePath is toggled in the config, set it
     $this->showFilePath = isset($config['showFilePath']) ? filter_var($config['showFilePath'], FILTER_VALIDATE_BOOLEAN) : false;
+
+    //if downloadExtras is toggled in the config, set it
+    $this->downloadExtras = isset($config['downloadExtras']) ? filter_var($config['downloadExtras'], FILTER_VALIDATE_BOOLEAN) : true;
 
     //if there is a file set attempt to open it
     if (isset($config['file'])) {
@@ -469,6 +473,9 @@ class Archiver {
       //gets the page, replaces characters that aren't safe in filenames with '_', adds the current timestamp in UTC and then adds .html
       $file = (isset($filepath_matches[2]) ? str_replace(['\\', '/', ':', '*', '?', '"', '<', '>', "|"], "_", $filepath_matches[2]) : "index") . ".html";
 
+      //if set to download the extras, then do that
+      if ($this->downloadExtras) $res = $this->parse_HTML(["html" => $res, "filepath" => $filepath, "path" => $path, "domain" => $site]);
+
       //returns the file location or false
       if (file_put_contents($loc = ($path . $filepath . $file), $res)) return $loc;
       else return false;
@@ -507,6 +514,62 @@ class Archiver {
 
     //returns the array as a string
     return rtrim($str,",\n") . "\n" . ($level > 1 ? substr($space, 0, -2) : "") . "]";
+  }
+
+  /**
+   * This function parses out links and sets them to be downloaded
+   *
+   * @param object $config The config object
+   * @property html html The html sent to be parsed (Used over
+   * file) (required, or file)
+   * @property string file File is the filepath sent to be loaded
+   * and parsed (required, or html)
+   * @property string filepath The filepath sent of where the the
+   * html will go (required, or it can be extracted from the file)
+   * @property string path The path to the file path from the code
+   * @property string domain The domain for knowning what was local
+   * on the site
+   * 
+   * @return html|int Either returns the parse HTML or an int of 
+   * he number of bytes written (could be 0, keep that in mind)
+   */
+  function parse_HTML($config) {
+    //gets the html if it is sent
+    if (isset($config["html"])) $html = $config["html"];
+    //if a file is sent, open it
+    else if (isset($config["file"])) $html = file_get_contents($config["file"]);
+    //error out, we need HTML
+    else throw new \Exception("There must be html sent in order to parse it.");
+
+    //get the filepath
+    if (isset($config["filepath"])) $filepath = $config["filepath"];
+    //if theres a file, parse it out
+    else if (isset($config["file"])) if (preg_match("{^(\S+\/)?(\w+(?:\.\w+)*)}i", $config["file"], $filepath_matches)) $filepath = (isset($filepath_matches[1]) ? $filepath_matches[1] : "");
+    //otherwise assume none
+    else $filepath = "";
+
+    //gets the path if there is one, otherwise assumes none
+    $path = isset($config["path"]) ? $config["path"] : "";
+
+    //gets the domain
+    if (isset($config["domain"])) $url = $config["domain"];
+    //otherwise throw an error
+    else throw new \Exception("There must be a domain sent in order to parse out important references.");
+
+    //matches all the links
+    preg_match_all("{<(link|script|img)+ (?:\w+=\"[\S ]+\" )*(?:href|src)=\"(\S+)\"(?: \w+=\"[\S ]+\")* ?\/?>}i", $html, $matches);
+
+    //defines extras
+    $extras = [];
+
+    //loops through all the matches and processes them
+    foreach (range(0,count($matches[0]) - 1) as $i) $extras[] = (new \web\Reference([ "orginalText" => $matches[0][$i], "tagType" => $matches[1][$i], "reference" => $matches[2][$i] ]))->process();
+
+    //loops through all the downloaded references and replaces them in the file
+    foreach ($extras as $extra) str_replace($extra->old, $extra->new, $html);
+
+    //if there was a file, set it again, otherwise return the html
+    return isset($config["file"]) ? file_put_contents($config["file"], $html) : $html;
   }
 }
 ?>

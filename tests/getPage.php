@@ -11,10 +11,10 @@ $archiver = new web\Archiver([
 ]);
 
 //processes the urls with the params for console output
-//echo $archiver->process_console();
+echo "Results:\n" . $archiver->process_console();
 //echo $archiver->process_text();
 //echo $archiver->process_web();
 //echo $archiver->process_array();
-echo $archiver->process();
+//echo $archiver->process();
 
 ?>
