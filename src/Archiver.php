@@ -18,7 +18,8 @@ class Archiver {
    * @property string timezone that is used in when stamping the archive (Default: UTC)
    * @property bool verbose is used to set verbose mode on or off (Default: off)
    * @property bool showFilePath is used to show the file path on or off (Default: off)
-   * @property string file that is imported into the url list, put one url on a line
+   * @property string file that is imported into the url list, put one url on a line (urls proceeded by //
+   * or # will be ignored)
    * @property string resultsFile where to save the results to (works as the toggle)
    */
   function __construct(array $config = []) {
@@ -30,9 +31,6 @@ class Archiver {
 
     //if the config has a folder set it, otherwise set the default
     $this->folder = isset($config['folder']) ? (gettype($config['folder'] == "string") ? $config['folder'] : ($error = new \Exception("The param folder must be a string."))) : "history/";
-
-    //if the config has resultsFile set the path to use (works as the toggle), otherwise set to none
-    $this->resultsFile = isset($config['resultsFile']) ? (gettype($config['resultsFile'] == "string") ? $config['resultsFile'] : ($error = new \Exception("The param resultsFile must be a string."))) : false;
 
     //if verbose is toggled in the config, set it
     $this->verbose = isset($config['verbose']) ? filter_var($config['verbose'], FILTER_VALIDATE_BOOLEAN) : false;
@@ -49,11 +47,14 @@ class Archiver {
       $f = fopen($config['file'],'rb');
 
       //loops through getting the urls, if theres a url on the link add it
-      while (!feof($f)) if (preg_match("{(http\S+)}i", fgets($f), $m)) $this->add_urls($m[1]);
+      while (!feof($f)) if (preg_match("{((?:\/\/)|#)?(http\S+)}i", fgets($f), $m)) if (strlen($m[1]) == 0) $this->add_urls($m[2]);
 
       //close the file
       fclose($f);
     }
+
+    //if the config has resultsFile set the path to use (works as the toggle), otherwise set to none
+    $this->resultsFile = isset($config['resultsFile']) ? (gettype($config['resultsFile'] == "string") ? $config['resultsFile'] : ($error = new \Exception("The param resultsFile must be a string."))) : false;
 
     //checks to make sure the folder has a trailing slash
     if (substr($this->folder, -1) != "/" && substr($this->folder, -1) != "\\") $this->folder .= "/";
@@ -459,14 +460,17 @@ class Archiver {
       //matches the file path from the site
       preg_match("{^(\S+\/)?(\w+(?:\.\w+)*)}i", $matches[2], $filepath_matches);
 
+      //gets the path
+      $path = $this->folder . $site . $time_folder;
+
       //if the folder doesn't exist for the filepath, make it
-      if (!file_exists($this->folder . $site . $time_folder . ($filepath = (isset($filepath_matches[1]) ? $filepath_matches[1] : "")))) mkdir($this->folder . $site . $time_folder . $filepath);
+      if (!file_exists($path . ($filepath = (isset($filepath_matches[1]) ? $filepath_matches[1] : "")))) mkdir($path . $filepath);
 
       //gets the page, replaces characters that aren't safe in filenames with '_', adds the current timestamp in UTC and then adds .html
       $file = (isset($filepath_matches[2]) ? str_replace(['\\', '/', ':', '*', '?', '"', '<', '>', "|"], "_", $filepath_matches[2]) : "index") . ".html";
 
       //returns the file location or false
-      if (file_put_contents($loc = ($this->folder . $site . $time_folder . $filepath . $file), $res)) return $loc;
+      if (file_put_contents($loc = ($path . $filepath . $file), $res)) return $loc;
       else return false;
     }
   }
@@ -481,14 +485,14 @@ class Archiver {
     return _array_to_string($array);
   }
 
-    /**
-     * This function converts an Array/Object to a string
-     *
-     * @param object|array $array The Array/Object to be converted to a string
-     * @param int $level The level deep we are when converting the array to a
-     *            string (should be left out so it can auto handle)
-     * @return string of the Array/Object
-     */
+  /**
+   * This function converts an Array/Object to a string
+   *
+   * @param object|array $array The Array/Object to be converted to a string
+   * @param int $level The level deep we are when converting the array to a
+   *            string (should be left out so it can auto handle)
+   * @return string of the Array/Object
+   */
   protected function _array_to_string($array, $level = 1) {
     //defines the starting space
     $space = "  ";
