@@ -51,7 +51,7 @@ class Archiver {
       $f = fopen($config['file'],'rb');
 
       //loops through getting the urls, if theres a url on the link add it
-      while (!feof($f)) if (preg_match("{((?:\/\/)|#)?(http\S+)}i", fgets($f), $m)) if (strlen($m[1]) == 0) $this->add_urls($m[2]);
+      while (!feof($f)) if (preg_match("{((?:\/\/)|#)?\s*(http\S+)}i", fgets($f), $m)) if (strlen($m[1]) == 0) $this->add_urls($m[2]);
 
       //close the file
       fclose($f);
@@ -395,7 +395,7 @@ class Archiver {
     if ($a["error"]) return "Error: " . $a["error"];
 
     //returns the string of the details
-    return "URL: ".$a["url"]." Was: ".($a["pass"] ? "Succesful" : "Failed") . ($this->showFilePath ? " Path: " . $a["path"]: "");
+    return "URL: ".$a["url"]." was: ".($a["pass"] ? "Succesful" : "Failed") . ($this->showFilePath ? " Path: " . $a["path"]: "");
   }
 
   /**
@@ -450,10 +450,13 @@ class Archiver {
     if (!file_exists($this->folder)) mkdir($this->folder);
 
     //matches out the domain and the page
-    if (preg_match("{^(?:https?:\/\/)(?:www\.)?([^\/]+)\/?([^?]+)(\S*)$}i", $url, $matches)) {
+    if (preg_match("{^((?:https?:\/\/)(?:www\.)?([^\/]+)\/?)([^?]+)(\S*)$}i", $url, $matches)) {
+
+      //gets the domain
+      $domain = $matches[1];
 
       //gets the domain, replaces characters that aren't safe in filenames with '_'
-      $site = str_replace(['\\', '/', ':', '*', '?', '"', '<', '>', "|"], "_", $matches[1]).'/';
+      $site = str_replace(['\\', '/', ':', '*', '?', '"', '<', '>', "|"], "_", $matches[2]).'/';
 
       //if the folder doesn't exist for the site, make it
       if (!file_exists($this->folder . $site)) mkdir($this->folder . $site);
@@ -462,7 +465,7 @@ class Archiver {
       if (!file_exists($this->folder . $site . ($time_folder = (new \DateTime("now", new \DateTimeZone($this->timezone)))->format('M_d_Y___H_i_s_v')."/"))) mkdir($this->folder . $site . $time_folder);
 
       //matches the file path from the site
-      preg_match("{^(\S+\/)?(\w+(?:\.\w+)*)}i", $matches[2], $filepath_matches);
+      preg_match("{^(\S+\/)?([\w-]+(?:\.\w+)*)(\/)?}i", $matches[3], $filepath_matches);
 
       //gets the path
       $path = $this->folder . $site . $time_folder;
@@ -474,7 +477,7 @@ class Archiver {
       $file = (isset($filepath_matches[2]) ? str_replace(['\\', '/', ':', '*', '?', '"', '<', '>', "|"], "_", $filepath_matches[2]) : "index") . ".html";
 
       //if set to download the extras, then do that
-      if ($this->downloadExtras) $res = $this->parse_HTML(["html" => $res, "filepath" => $filepath, "path" => $path, "domain" => $site]);
+      if ($this->downloadExtras) $res = $this->parse_HTML(["html" => $res, "filepath" => $filepath, "path" => $path, "domain" => $domain, "originalFile" => $matches[3]]);
 
       //returns the file location or false
       if (file_put_contents($loc = ($path . $filepath . $file), $res)) return $loc;
@@ -541,10 +544,15 @@ class Archiver {
     //error out, we need HTML
     else throw new \Exception("There must be html sent in order to parse it.");
 
+    //if originalFile is sent, set it
+    if (isset($config["originalFile"])) $originalFile = $config["originalFile"];
+    //error out, we need an original file
+    else throw new \Exception("There must be an originalFile sent.");
+
     //get the filepath
     if (isset($config["filepath"])) $filepath = $config["filepath"];
     //if theres a file, parse it out
-    else if (isset($config["file"])) if (preg_match("{^(\S+\/)?(\w+(?:\.\w+)*)}i", $config["file"], $filepath_matches)) $filepath = (isset($filepath_matches[1]) ? $filepath_matches[1] : "");
+    else if (isset($config["file"])) if (preg_match("{^(\S+\/)?([\w-]+(?:\.\w+)*)}i", $config["file"], $filepath_matches)) $filepath = (isset($filepath_matches[1]) ? $filepath_matches[1] : "");
     //otherwise assume none
     else $filepath = "";
 
@@ -552,21 +560,21 @@ class Archiver {
     $path = isset($config["path"]) ? $config["path"] : "";
 
     //gets the domain
-    if (isset($config["domain"])) $url = $config["domain"];
+    if (isset($config["domain"])) $domain = $config["domain"];
     //otherwise throw an error
     else throw new \Exception("There must be a domain sent in order to parse out important references.");
 
     //matches all the links
-    preg_match_all("{<(link|script|img)+ (?:\w+=\"[\S ]+\" )*(?:href|src)=\"(\S+)\"(?: \w+=\"[\S ]+\")* ?\/?>}i", $html, $matches);
+    preg_match_all("{<(link|script|img)+ *(?:\w+=\"[\S ]+\" *)*(?:href|src)=\"([^\"]+)\"(?: *\w+=\"[\S ]+\")* *\/?>}i", $html, $matches);
 
     //defines extras
     $extras = [];
 
     //loops through all the matches and processes them
-    foreach (range(0,count($matches[0]) - 1) as $i) $extras[] = (new \web\Reference([ "orginalText" => $matches[0][$i], "tagType" => $matches[1][$i], "reference" => $matches[2][$i] ]))->process();
+    foreach (range(0,count($matches[0]) - 1) as $i) $extras[] = (new \web\Reference([ "orginalText" => $matches[0][$i], "tagType" => $matches[1][$i], "reference" => $matches[2][$i], "domain" => $domain, "path" => $path, "filepath" => $filepath, "originalFile" => $originalFile]))->process();
 
     //loops through all the downloaded references and replaces them in the file
-    foreach ($extras as $extra) str_replace($extra->old, $extra->new, $html);
+    foreach ($extras as $extra) $html = str_replace($extra->old, $extra->new, $html);
 
     //if there was a file, set it again, otherwise return the html
     return isset($config["file"]) ? file_put_contents($config["file"], $html) : $html;
