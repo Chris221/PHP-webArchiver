@@ -6,14 +6,14 @@ namespace web;
  * This class saves the references from html
  */
 class Reference {
-  protected $tagType, $orginalText, $oldReference, $newText, $domain, $path, $filepath, $originalFile;
+  protected $tagType, $originalText, $oldReference, $newText, $domain, $path, $filepath, $originalFile;
 
   /**
    * The constructor function is used to set up the whole class
    *
    * @param array $config Takes a list of params and sets up the library on them
    * @property string tagType The tag that we are replacing
-   * @property string orginalText The text to be replaced
+   * @property string originalText The text to be replaced
    * @property string reference The link to the file location from the page
    * @property string domain The domain it came from
    * @property string path The path to the save location
@@ -26,10 +26,10 @@ class Reference {
     //otherwise error out
     else throw new \Exception("There must be a tag sent.");
 
-    //sets the orginalText if set
-    if (isset($config["orginalText"])) $this->orginalText = $config["orginalText"];
+    //sets the originalText if set
+    if (isset($config["originalText"])) $this->originalText = $config["originalText"];
     //otherwise error out
-    else throw new \Exception("There must be an orginal text sent.");
+    else throw new \Exception("There must be an original text sent.");
 
     //sets the reference if set
     if (isset($config["reference"])) $this->oldReference = $config["reference"];
@@ -55,6 +55,20 @@ class Reference {
     if (isset($config["originalFile"])) $this->originalFile = $config["originalFile"];
     //otherwise error out
     else throw new \Exception("There must be a originalFile sent.");
+  }
+
+  /**
+   * This function takes in a string and updates the reference variables
+   *
+   * @param string $string The new reference to replace the old one
+   * @return void
+   */
+  protected function update_reference($string) {
+    //updates the original
+    $this->newText = str_replace($this->oldReference, $string, $this->originalText);
+
+    //updates the oldReference variable
+    $this->oldReference = $string;
   }
 
   /**
@@ -98,8 +112,9 @@ class Reference {
    * @return object a bypass for process
    */
   protected function bypass() {
+
     //returns the bypass
-    return (object) ["old" => $this->orginalText, "new" => $this->orginalText];
+    return (object) ["old" => $this->originalText, "new" => (isset($this->newText) ? $this->newText : $this->originalText)];
   }
 
   /**
@@ -143,14 +158,15 @@ class Reference {
     else $filepath = $this->path . ($folders = "");
 
     //replaces the space in the url if there is one
-    $url = str_replace(" ", "%20", (substr(($ref = $matches[3]), 0, 4) == "http" ? "" : $this->domain) . ($matches[2] == "/" ? "" : $folders) . $ref);
+    $url = str_replace(" ", "%20", (substr(($ref = $matches[3]), 0, 4) == "http" ? "" : $this->domain . "/") . ($matches[2] == "/" ? "" : $folders) . $ref);
 
     //parses the reference for the file and its path
-    preg_match("{^([\S ]+\/)?([\w-]+(?:\.\w+)*)}", $ref, $reference_matches);
+    preg_match("{^([\S ]+\/)?([\w -]+(?:\.\w+)*)}", $ref, $reference_matches);
 
     //makes the folders from the reference
     if (!file_exists(($folder = $filepath . $reference_matches[1]))) mkdir($folder, 0777, true);
 
+    echo("URL: $url\n");
     //gets the file and save it
     file_put_contents($filepath . ($file_loc = $reference_matches[1] . $reference_matches[2]), $this->curl($url));
 
@@ -160,11 +176,11 @@ class Reference {
     //if the path was absolute, loop through backouts and add them
     if ($matches[2] == "/") if ($current > 0) foreach(range(1, $current) as $i) $matches[1] .= "../";
 
-    //builds the new text to replace in the full file
-    $this->newText = str_replace($this->oldReference, $matches[1] . $file_loc, $this->orginalText);
+    //updates the reference
+    $this->update_reference($matches[1] . $file_loc);
 
     //returns the structure to replace the text (if no new text, return the old)
-    return (object) ["old" => $this->orginalText, "new" => isset($this->newText) ? $this->newText : $this->orginalText];
+    return (object) ["old" => $this->originalText, "new" => $this->newText];
   }
 
   /**
@@ -176,10 +192,10 @@ class Reference {
     //HANDLE HTTP
 
     //debug
-    //echo("Old: $this->orginalText New: " . (isset($this->newText) ? $this->newText : $this->orginalText) . "\n\n");
+    echo("Old: $this->originalText New: " . (isset($this->newText) ? $this->newText : $this->originalText) . "\n\n");
 
     //returns the bypass
-    return (object) ["old" => $this->orginalText, "new" => $this->orginalText];
+    return (object) ["old" => $this->originalText, "new" => $this->newText];
   }
 
   /**
@@ -188,8 +204,11 @@ class Reference {
    * @return object the original text and new text to replace it with
    */
   function process() {
-    //if this is a link, and rel="canonical" or rel="pingback" is there, bypass
-    if ($this->tagType == "link") if (strpos($this->orginalText,'rel="canonical"') !== false || strpos($this->orginalText,'rel="pingback"') !== false) return $this->bypass();
+    //if theres a http reference without the http or https, add it back
+    if (substr($this->oldReference, 0, 2) == "//" || substr($this->oldReference, 0, 3) == "://") $this->update_reference("http" . (substr($this->oldReference, 0, 2) == "//" ? ":" : "") . $this->oldReference);
+
+    //if this is a link, and rel="canonical" or rel="pingback" is there, or if an iframe bypass
+    if (($this->tagType == "link" && (strpos($this->originalText,'rel="canonical"') !== false || strpos($this->originalText,'rel="pingback"') !== false)) || $this->tagType == "iframe") return $this->bypass();
 
     //if the reference is a http reference
     if (substr($this->oldReference, 0, 4) == "http") {

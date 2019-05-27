@@ -270,7 +270,7 @@ class Archiver {
     //processes the urls
     $res = $this->process_urls();
 
-    //if the type is set to array then return the orginal array
+    //if the type is set to array then return the original array
     if (@$config["type"] == "array") return $res;
 
     //if the type is set to string, return them as a string
@@ -564,14 +564,20 @@ class Archiver {
     //otherwise throw an error
     else throw new \Exception("There must be a domain sent in order to parse out important references.");
 
+    //gets all the links
+    preg_match_all("{(?:href|src)=\"([^\"]+)\"}i", $html, $to_be_replaced);
+
+    //makes sure the links didn't get broken when the site was fetched
+    $html = str_replace($to_be_replaced[1], str_replace(["%3A", "%2F", "&amp;"], [":", "/", "&"], $to_be_replaced[1]), $html);
+
     //matches all the links
-    preg_match_all("{<(link|script|img)+ *(?:\w+=\"[\S ]+\" *)*(?:href|src)=\"([^\"]+)\"(?: *\w+=\"[\S ]+\")* *\/?>}i", $html, $matches);
+    preg_match_all("{<(link|script|img|iframe) *(?:\w+=\"[\S ]+\" *)*(?:href|src)=\"([^\"]+)\"(?: *\w+=\"[\S ]+\")* *\/?>}i", $html, $matches);
 
     //defines extras
     $extras = [];
 
     //loops through all the matches and processes them
-    foreach (range(0,count($matches[0]) - 1) as $i) $extras[] = (new \web\Reference([ "orginalText" => $matches[0][$i], "tagType" => $matches[1][$i], "reference" => $matches[2][$i], "domain" => $domain, "path" => $path, "filepath" => $filepath, "originalFile" => $originalFile]))->process();
+    foreach (range(0,count($matches[0]) - 1) as $i) $extras[] = (new \web\Reference([ "originalText" => $matches[0][$i], "tagType" => $matches[1][$i], "reference" => $matches[2][$i], "domain" => $domain, "path" => $path, "filepath" => $filepath, "originalFile" => $originalFile]))->process();
 
     //loops through all the downloaded references and replaces them in the file
     foreach ($extras as $extra) $html = str_replace($extra->old, $extra->new, $html);
