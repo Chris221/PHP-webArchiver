@@ -103,22 +103,16 @@ class Reference {
   }
 
   /**
-   * This function downloads the reference files
+   * This function handles local references
    *
    * @return object the original text and new text to replace it with
    */
-  function process() {
+  protected function handle_local() {
     //gets the full original file
     preg_match("{^([^.]+)}", $this->originalFile, $m);
 
-    //if this is a link, and rel="canonical" is there, bypass
-    if ($this->tagType == "link") if (strpos($this->orginalText,'rel="canonical"') !== false) return $this->bypass();
-
     //parses the reference
     preg_match("{((?:\.\.\/)*)(\/)?(.*)}", $this->oldReference, $matches);
-    
-    //if the start of the reference is http, bypass for now
-    if (substr(($ref = $matches[3]), 0, 4) == "http") return $this->bypass();
 
     //if the tah is a img
     if ($this->tagType == "img") {
@@ -164,16 +158,48 @@ class Reference {
     if (isset($one_less_back)) $matches[1] = substr($matches[1], 3);
 
     //if the path was absolute, loop through backouts and add them
-    if ($matches[2] == "/") foreach(range(1, $current) as $i) $matches[1] .= "../";
+    if ($matches[2] == "/") if ($current > 0) foreach(range(1, $current) as $i) $matches[1] .= "../";
 
     //builds the new text to replace in the full file
     $this->newText = str_replace($this->oldReference, $matches[1] . $file_loc, $this->orginalText);
 
+    //returns the structure to replace the text (if no new text, return the old)
+    return (object) ["old" => $this->orginalText, "new" => isset($this->newText) ? $this->newText : $this->orginalText];
+  }
+
+  /**
+   * This function handles http references
+   *
+   * @return object the original text and new text to replace it with
+   */
+  protected function handle_HTTP() {
+    //HANDLE HTTP
+
     //debug
     //echo("Old: $this->orginalText New: " . (isset($this->newText) ? $this->newText : $this->orginalText) . "\n\n");
 
-    //returns the structure to replace the text (if no new text, return the old)
-    return (object) ["old" => $this->orginalText, "new" => isset($this->newText) ? $this->newText : $this->orginalText];
+    //returns the bypass
+    return (object) ["old" => $this->orginalText, "new" => $this->orginalText];
+  }
+
+  /**
+   * This function downloads the reference files
+   *
+   * @return object the original text and new text to replace it with
+   */
+  function process() {
+    //if this is a link, and rel="canonical" or rel="pingback" is there, bypass
+    if ($this->tagType == "link") if (strpos($this->orginalText,'rel="canonical"') !== false || strpos($this->orginalText,'rel="pingback"') !== false) return $this->bypass();
+
+    //if the reference is a http reference
+    if (substr($this->oldReference, 0, 4) == "http") {
+      //handle http
+      return $this->handle_HTTP();
+    //otherwise
+    } else {
+      //handle local
+      return $this->handle_local();
+    }
   }
 }
 ?>
