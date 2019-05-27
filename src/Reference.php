@@ -166,7 +166,6 @@ class Reference {
     //makes the folders from the reference
     if (!file_exists(($folder = $filepath . $reference_matches[1]))) mkdir($folder, 0777, true);
 
-    echo("URL: $url\n");
     //gets the file and save it
     file_put_contents($filepath . ($file_loc = $reference_matches[1] . $reference_matches[2]), $this->curl($url));
 
@@ -192,7 +191,6 @@ class Reference {
     //HANDLE HTTP
 
     //debug
-    echo("Old: $this->originalText New: " . (isset($this->newText) ? $this->newText : $this->originalText) . "\n\n");
 
     //returns the bypass
     return (object) ["old" => $this->originalText, "new" => $this->newText];
@@ -206,7 +204,9 @@ class Reference {
   function process() {
     //if theres a http reference without the http or https, add it back
     if (substr($this->oldReference, 0, 2) == "//" || substr($this->oldReference, 0, 3) == "://") $this->update_reference("http" . (substr($this->oldReference, 0, 2) == "//" ? ":" : "") . $this->oldReference);
-
+    //otherwise set new to current
+    else $this->update_reference($this->oldReference);
+    
     //if this is a link, and rel="canonical" or rel="pingback" is there, or if an iframe bypass
     if (($this->tagType == "link" && (strpos($this->originalText,'rel="canonical"') !== false || strpos($this->originalText,'rel="pingback"') !== false)) || $this->tagType == "iframe") return $this->bypass();
 

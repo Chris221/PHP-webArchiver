@@ -568,10 +568,10 @@ class Archiver {
     preg_match_all("{(?:href|src)=\"([^\"]+)\"}i", $html, $to_be_replaced);
 
     //makes sure the links didn't get broken when the site was fetched
-    $html = str_replace($to_be_replaced[1], str_replace(["%3A", "%2F", "&amp;"], [":", "/", "&"], $to_be_replaced[1]), $html);
+    $html = str_replace($to_be_replaced[1], str_replace(["&amp;"], ["&"], $to_be_replaced[1]), $html);
 
     //matches all the links
-    preg_match_all("{<(link|script|img|iframe) *(?:\w+=\"[\S ]+\" *)*(?:href|src)=\"([^\"]+)\"(?: *\w+=\"[\S ]+\")* *\/?>}i", $html, $matches);
+    preg_match_all("{<(link|script|img|iframe|embed) *(?:\w+=\"[\S ]+\" *)*(?:href|src)=\"([^\"]+)\"(?: *\w+=\"[\S ]+\")* *\/?>}i", $html, $matches);
 
     //defines extras
     $extras = [];
