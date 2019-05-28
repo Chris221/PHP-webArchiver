@@ -187,12 +187,37 @@ class Reference {
    * @return object the original text and new text to replace it with
    */
   protected function handle_HTTP() {
-    //HANDLE HTTP
+    //if the domain isn't local, return
+    if (strpos($this->oldReference, $this->domain) === FALSE) return $this->return();
 
-    //debug
+    //parses the link
+    preg_match("{^(?:https?:\/\/)(?:www\.)?[^\/]+\/?([^?]+)(\S*)}i", $this->oldReference, $matches);
 
-    //returns the bypass
-    return (object) ["old" => $this->originalText, "new" => $this->newText];
+    //if at the base http, return
+    if (empty($matches[1]) || $matches[1] == "/") return $this->return();
+
+    //splits on the slash
+    $folders = explode("/", $this->filepath);
+    //if the last element is empty, remove it
+    if (end($folders) == "") array_pop($folders);
+
+    //parses the reference for the file and its path
+    preg_match("{^([\S ]+\/)?([\w -]+(?:\.\w+)*)}", $matches[1], $reference_matches);
+
+    //makes the folders from the reference
+    if (!file_exists(($folder = ($this->path . $reference_matches[1])))) mkdir($folder, 0777, true);
+
+    //adds X number of ../ reference path
+    foreach($folders as $i) $reference_matches[1] = "../".$reference_matches[1];
+
+    //gets the file and save it
+    file_put_contents($folder . $reference_matches[2], $this->curl($this->oldReference));
+
+    //updates the reference
+    $this->update_reference($reference_matches[1] . $reference_matches[2]);
+
+    //returns the results
+    return $this->return();
   }
 
   /**
