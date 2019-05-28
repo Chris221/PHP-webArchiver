@@ -465,7 +465,7 @@ class Archiver {
       if (!file_exists($this->folder . $site . ($time_folder = (new \DateTime("now", new \DateTimeZone($this->timezone)))->format('M_d_Y___H_i_s_v')."/"))) mkdir($this->folder . $site . $time_folder);
 
       //matches the file path from the site
-      preg_match("{^(\S+\/)?([\w-]+(?:\.\w+)*)(\/)?}i", $matches[3], $filepath_matches);
+      preg_match("{^(\S+\/)?([\w -]+(?:\.\w+)*)(\/)?}i", $matches[3], $filepath_matches);
 
       //gets the path
       $path = $this->folder . $site . $time_folder;
@@ -571,7 +571,7 @@ class Archiver {
     $html = str_replace($to_be_replaced[1], str_replace(["&amp;"], ["&"], $to_be_replaced[1]), $html);
 
     //matches all the links
-    preg_match_all("{<(link|script|img|iframe|embed) *(?:\w+=\"[\S ]+\" *)*(?:href|src)=\"([^\"]+)\"(?: *\w+=\"[\S ]+\")* *\/?>}i", $html, $matches);
+    preg_match_all("{<(link|script|img|iframe|embed) *(?:\w+=[\'\"][\S ]+[\'\"] *)*(?:href|src)=[\'\"]([^\'\"]+)[\'\"](?: *\w+=[\'\"][\S ]+[\'\"])* *\/?>}i", $html, $matches);
 
     //defines extras
     $extras = [];
