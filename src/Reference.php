@@ -107,14 +107,13 @@ class Reference {
   }
 
   /**
-   * This function bypasses this reference
+   * This function returns this reference
    *
-   * @return object a bypass for process
+   * @return object the results
    */
-  protected function bypass() {
-
-    //returns the bypass
-    return (object) ["old" => $this->originalText, "new" => (isset($this->newText) ? $this->newText : $this->originalText)];
+  protected function return() {
+    //returns the results
+    return (object) ["old" => $this->originalText, "new" => $this->newText];
   }
 
   /**
@@ -207,8 +206,8 @@ class Reference {
     //otherwise set new to current
     else $this->update_reference($this->oldReference);
     
-    //if this is a link, and rel="canonical" or rel="pingback" is there, or if an iframe bypass
-    if (($this->tagType == "link" && (strpos($this->originalText,'rel="canonical"') !== false || strpos($this->originalText,'rel="pingback"') !== false)) || $this->tagType == "iframe") return $this->bypass();
+    //if this is a link, and rel="canonical" or rel="pingback" is there, or if an iframe bypass the results
+    if (($this->tagType == "link" && (strpos($this->originalText,'rel="canonical"') !== false || strpos($this->originalText,'rel="pingback"') !== false || strpos($this->originalText,'rel="alternate"') !== false)) || $this->tagType == "iframe") return $this->return();
 
     //if the reference is a http reference
     if (substr($this->oldReference, 0, 4) == "http") {
